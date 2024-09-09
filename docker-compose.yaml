@@ -1,0 +1,34 @@
+services:
+  mysql:
+    image: mysql:8.4.2
+    container_name: demo-mysql
+    environment:
+      - MYSQL_DATABASE=db
+      - MYSQL_ROOT_PASSWORD=rootpw
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db:/var/lib/mysql
+    ports:
+      - "13306:3306"
+    networks:
+      - nw
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: demo-phpmyadmin
+    ports:
+      - "3080:80"
+    environment:
+      - PMA_HOST=mysql
+    depends_on:
+      - mysql
+    networks:
+      - nw
+
+networks:
+  nw:
+    driver: bridge
+
+volumes:
+  db:
