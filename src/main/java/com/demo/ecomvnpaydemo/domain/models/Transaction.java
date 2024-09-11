@@ -21,6 +21,12 @@ public class Transaction extends Base {
     @Enumerated(EnumType.STRING)
     private TransactionStatus status;
 
+    @Column(name = "message")
+    private String message;
+
+    @Column(name = "resultCode")
+    private String resultCode;
+
     public Transaction() {
     }
 
@@ -54,5 +60,21 @@ public class Transaction extends Base {
 
     public void setStatus(TransactionStatus status) {
         this.status = status;
+    }
+
+    public String getResultCode() {
+        return resultCode;
+    }
+
+    public void setResultCode(String resultCode) {
+        this.resultCode = resultCode;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

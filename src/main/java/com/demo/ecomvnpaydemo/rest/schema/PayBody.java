@@ -1,4 +1,4 @@
-package com.demo.ecomvnpaydemo.rest.dto;
+package com.demo.ecomvnpaydemo.rest.schema;
 
 public class PayBody {
 

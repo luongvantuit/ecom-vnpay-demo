@@ -10,10 +10,11 @@
 
 
 <div class="container">
-    <h1 class="m-5">Pay VNPay or Momo (Test)</h1>
-    <form action="#" th:object="${pay}" method="post" class="d-flex flex-column m-5">
-        <div class="alert alert-danger" role="alert" th:if="${errorMessage != null && !errorMessage.isEmpty()}">
-            <p th:text="${errorMessage}"></p>
+    <h1 class="my-5">Pay VNPay or Momo (Test)</h1>
+    <form action="#" th:object="${pay}" method="post" class="d-flex flex-column my-5">
+        <div role="alert" th:if="${message != null}"
+             th:class="'alert ' + ${#bools.isTrue(success) ? 'alert-success': 'alert-danger' }">
+            <p th:text="${message}"></p>
         </div>
         <label for="amount">
             Amount (VND)
@@ -29,7 +30,8 @@
         <button type="submit" th:formaction="@{/momo/pay}" class="btn btn-outline-primary mt-2">Pay with Momo</button>
     </form>
 
-
+    <hr>
+    <a href="/orders" >Danh sách đơn hàng</a>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

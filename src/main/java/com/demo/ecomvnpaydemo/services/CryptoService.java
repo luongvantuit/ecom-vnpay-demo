@@ -5,10 +5,12 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Service
-public class VnpayService {
+public class CryptoService {
 
     public String hashAllFields(final String key, Map<String, String> fields) {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
@@ -32,7 +34,6 @@ public class VnpayService {
 
     public String hmacSHA512(final String key, final String data) {
         try {
-
             if (key == null || data == null) {
                 throw new NullPointerException();
             }
@@ -51,6 +52,32 @@ public class VnpayService {
         } catch (Exception ex) {
             return "";
         }
+    }
+
+    public String hmacSHA256(final String key, final String data) throws NoSuchAlgorithmException, InvalidKeyException {
+        // Tạo đối tượng Mac với thuật toán HMAC-SHA256
+        Mac sha256Hmac = Mac.getInstance("HmacSHA256");
+
+        // Tạo khóa bí mật từ secretKey
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+
+        // Khởi tạo đối tượng Mac với khóa bí mật
+        sha256Hmac.init(secretKeySpec);
+
+        // Tính toán HMAC cho thông điệp
+        byte[] hmacBytes = sha256Hmac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+
+        // Chuyển đổi HMAC thành chuỗi Base64 để dễ đọc hơn (hoặc có thể dùng Hex)
+
+        return toHexString(hmacBytes);
+    }
+
+    private static String toHexString(byte[] bytes) {
+        Formatter formatter = new Formatter();
+        for (byte b : bytes) {
+            formatter.format("%02x", b);
+        }
+        return formatter.toString();
     }
 
 }
