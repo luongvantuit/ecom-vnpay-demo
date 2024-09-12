@@ -2,6 +2,7 @@ package com.demo.ecomvnpaydemo.rest.controllers;
 
 import com.demo.ecomvnpaydemo.domain.models.Transaction;
 import com.demo.ecomvnpaydemo.repositories.TransactionRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,13 +25,15 @@ public class TransactionController {
         this.transactionRepository = transactionRepository;
     }
 
-    @RequestMapping(path = "/{transactionId}", method = RequestMethod.GET)
-    public ModelAndView show(Model model, @PathVariable(value = "transactionId") String transactionId) {
+    @RequestMapping(path = {"/{transactionId}","/{transactionId}/"}, method = RequestMethod.GET)
+    public ModelAndView show(Model model, @PathVariable(value = "transactionId") String transactionId, HttpServletRequest httpServletRequest) {
         Optional<Transaction> optionalTransaction = transactionRepository.findById(UUID.fromString(transactionId));
         if (optionalTransaction.isEmpty()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
         }
         model.addAttribute("transaction", optionalTransaction.get());
+        model.addAttribute("message", httpServletRequest.getParameter("message"));
+        model.addAttribute("success", httpServletRequest.getParameter("success"));
         return new ModelAndView("transaction");
     }
 

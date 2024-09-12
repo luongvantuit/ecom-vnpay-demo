@@ -6,26 +6,17 @@ import com.demo.ecomvnpaydemo.domain.models.Transaction;
 import com.demo.ecomvnpaydemo.domain.models.TransactionStatus;
 import com.demo.ecomvnpaydemo.repositories.OrderRepository;
 import com.demo.ecomvnpaydemo.repositories.TransactionRepository;
-import com.demo.ecomvnpaydemo.rest.schema.MomoPayPayload;
-import com.demo.ecomvnpaydemo.rest.schema.MomoPayResponse;
 import com.demo.ecomvnpaydemo.rest.schema.MomoPayWebhookPayload;
-import com.demo.ecomvnpaydemo.rest.schema.PayBody;
 import com.demo.ecomvnpaydemo.services.CryptoService;
-import com.demo.ecomvnpaydemo.services.OrderRefService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -35,15 +26,7 @@ import java.util.*;
 public class MomoController {
 
     private static final Logger log = LoggerFactory.getLogger(MomoController.class);
-
-    @Value("${payment.momo.partner-code}")
-    private String partnerCode;
-
-    @Value("${payment.momo.pay.return-url}")
-    private String redirectUrl;
-
-    @Value("${payment.momo.pay.webhook-url}")
-    private String webhookUrl;
+    private final HttpServletRequest httpServletRequest;
 
     @Value("${payment.momo.access-key}")
     private String accessKey;
@@ -51,95 +34,20 @@ public class MomoController {
     @Value("${payment.momo.secret-key}")
     private String secretKey;
 
-    @Value("${payment.momo.pay.url}")
-    private String momoPayUrl;
-
     private final CryptoService cryptoService;
-
-    private final OrderRefService orderRefService;
 
     private final OrderRepository orderRepository;
 
     private final TransactionRepository transactionRepository;
 
-    public MomoController(OrderRefService orderRefService, OrderRepository orderRepository, CryptoService cryptoService, TransactionRepository transactionRepository) {
-        this.orderRefService = orderRefService;
+    public MomoController(OrderRepository orderRepository, CryptoService cryptoService, TransactionRepository transactionRepository, HttpServletRequest httpServletRequest) {
         this.orderRepository = orderRepository;
         this.cryptoService = cryptoService;
         this.transactionRepository = transactionRepository;
+        this.httpServletRequest = httpServletRequest;
     }
 
-    @RequestMapping(path = "/pay", method = RequestMethod.POST, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public void pay(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, @ModelAttribute PayBody body) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
-        // New order
-        String content = body.getContent();
-        String ref = orderRefService.genRef(10);
-        log.info("Ref {}", ref);
-        Order order = new Order(body.getAmount(), content, ref, false);
-        orderRepository.save(order);
-        String requestId = UUID.randomUUID().toString();
-        long amount = (long) body.getAmount();
-        // Extra data
-        String extraData = "";
-        String requestType = "captureWallet";
-
-        String rawSignatureData = String.format(
-                // @formatter:off
-                "accessKey=%s" +
-                        "&amount=%d" +
-                        "&extraData=%s" +
-                        "&ipnUrl=%s" +
-                        "&orderId=%s" +
-                        "&orderInfo=%s" +
-                        "&partnerCode=%s" +
-                        "&redirectUrl=%s" +
-                        "&requestId=%s" +
-                        "&requestType=%s",
-                accessKey,
-                amount,
-                extraData,
-                webhookUrl,
-                ref,
-                body.getContent(),
-                partnerCode,
-                redirectUrl,
-                requestId,
-                requestType
-        );
-        log.info("Raw signature data {}", rawSignatureData);
-        // @formatter:on
-
-        String signature = cryptoService.hmacSHA256(secretKey, rawSignatureData);
-
-        log.info("Signature {}", signature);
-
-        MomoPayPayload payPayload = new MomoPayPayload(
-                // @formatter:off
-                partnerCode,
-                accessKey,
-                requestId,
-                amount,
-                ref,
-                body.getContent(),
-                redirectUrl,
-                webhookUrl,
-                extraData,
-                requestType,
-                signature
-                // @formatter:on
-        );
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/json");
-
-        HttpEntity<MomoPayPayload> request = new HttpEntity<>(payPayload, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-
-        ResponseEntity<MomoPayResponse> response = restTemplate.exchange(momoPayUrl, HttpMethod.POST, request, MomoPayResponse.class);
-        httpServletResponse.sendRedirect(Objects.requireNonNull(response.getBody()).getPayUrl());
-    }
-
-    @RequestMapping(path = "/webhook", method = RequestMethod.POST, consumes = {MediaType.APPLICATION_JSON_VALUE})
+    @RequestMapping(path = {"/webhook", "/webhook/"}, method = RequestMethod.POST, consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<Object> webhook(@RequestBody MomoPayWebhookPayload payload) throws NoSuchAlgorithmException, InvalidKeyException {
         log.info("Payload {}", payload);
 
@@ -174,14 +82,11 @@ public class MomoController {
                 // @formatter:off
         );
         String ref = payload.getOrderId();
-        Order order = orderRepository.findByRef(ref);
-        if (order == null) {
+        Transaction transaction = transactionRepository.findByRef(ref);
+        if (transaction == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        // Transaction
-        Transaction transaction = new Transaction();
-        transaction.setPayMethod(PayMethod.MOMO);
-        transaction.setOrder(order);
+        Order order = transaction.getOrder();
         // Defines
         TransactionStatus status = TransactionStatus.FAILED;
         String message = "Giao dịch thành công";
@@ -311,20 +216,20 @@ public class MomoController {
         transaction.setMessage(message);
         transaction.setStatus(status);
         transactionRepository.save(transaction);
-        Set<Transaction> transactions = order.getTransactions();
-        if (transactions == null) {
-            transactions = new HashSet<>();
-        }
-        transactions.add(transaction);
-        order.setTransactions(transactions);
         orderRepository.save(order);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @RequestMapping(path = "/return", method = RequestMethod.GET)
+    @RequestMapping(path = {"/return","/return/"}, method = RequestMethod.GET)
     public void _return(HttpServletResponse httpServletResponse) throws IOException {
         log.info("MOMO return received");
-        httpServletResponse.sendRedirect("/orders");
+        String ref = httpServletRequest.getParameter("orderId");
+        Transaction transaction = transactionRepository.findByRef(ref);
+        if (transaction == null) {
+            httpServletResponse.sendRedirect("/?message=Không tìm thấy thông tin giao dịch&success=false");
+        } else {
+            httpServletResponse.sendRedirect(String.format("/transactions/%s",transaction.getId().toString()));
+        }
     }
 
 }

@@ -11,11 +11,11 @@ import org.springframework.web.servlet.ModelAndView;
 @RestController
 public class HomeController {
 
-    @RequestMapping(path = "/", method = RequestMethod.GET)
+    @RequestMapping(path = {"","/"}, method = RequestMethod.GET)
     public ModelAndView home(HttpServletRequest httpServletRequest, Model model) {
         PayBody payBody = new PayBody();
         payBody.setAmount(10000);
-        payBody.setContent("Buy a product");
+        payBody.setContent("Mua sản phẩm");
         model.addAttribute("pay", payBody);
         model.addAttribute("message", httpServletRequest.getParameter("message"));
         model.addAttribute("success", httpServletRequest.getParameter("success"));

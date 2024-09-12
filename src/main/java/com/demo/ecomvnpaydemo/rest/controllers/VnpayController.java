@@ -6,23 +6,16 @@ import com.demo.ecomvnpaydemo.domain.models.Transaction;
 import com.demo.ecomvnpaydemo.domain.models.TransactionStatus;
 import com.demo.ecomvnpaydemo.repositories.OrderRepository;
 import com.demo.ecomvnpaydemo.repositories.TransactionRepository;
-import com.demo.ecomvnpaydemo.rest.schema.PayBody;
 import com.demo.ecomvnpaydemo.services.CryptoService;
-import com.demo.ecomvnpaydemo.services.OrderRefService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 @RestController
@@ -31,118 +24,31 @@ public class VnpayController {
 
     private static final Logger log = LoggerFactory.getLogger(VnpayController.class);
 
-
     private final CryptoService cryptoService;
-
-    @Value("${payment.vnpay.pay.url}")
-    private String vnPayPayUrl;
-
-    @Value("${payment.vnpay.pay.return-url}")
-    private String vnPayReturnUrl;
-
-    @Value("${payment.vnpay.tmn-code}")
-    private String vnPayTmnCode;
 
     @Value("${payment.vnpay.hash-secret}")
     private String hashSecret;
-
 
     private final OrderRepository orderRepository;
 
     private final TransactionRepository transactionRepository;
 
-    private final OrderRefService orderRefService;
-
-    public VnpayController(CryptoService cryptoService, OrderRefService orderRefService, OrderRepository orderRepository, TransactionRepository transactionRepository) {
+    public VnpayController(CryptoService cryptoService, OrderRepository orderRepository, TransactionRepository transactionRepository) {
         this.cryptoService = cryptoService;
-        this.orderRefService = orderRefService;
         this.orderRepository = orderRepository;
         this.transactionRepository = transactionRepository;
     }
 
-    @RequestMapping(path = "/pay", method = RequestMethod.POST, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public void pay(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, @ModelAttribute PayBody body) throws IOException, URISyntaxException {
-        log.info("VnPay pay request received");
-        // New order
-        String content = body.getContent();
-        float amount = body.getAmount();
-
-        String ref = orderRefService.genRef(10);
-
-        log.info("Ref {}", ref);
-
-        Order order = new Order(amount, content, ref, false);
-        orderRepository.save(order);
-
-        String ipaddr = httpServletRequest.getHeader("x-forwarded-for");
-
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        String createDate = formatter.format(cld.getTime());
-
-        cld.add(Calendar.MINUTE, 15);
-        String expireDate = formatter.format(cld.getTime());
-
-        Map<String, String> params = new HashMap<>();
-
-        params.put("vnp_Version", "2.1.0");
-        params.put("vnp_Command", "pay");
-        params.put("vnp_TmnCode", vnPayTmnCode);
-        params.put("vnp_Amount", String.format("%d", (int) body.getAmount() * 100));
-        params.put("vnp_CreateDate", createDate);
-        params.put("vnp_IpAddr", ipaddr);
-        params.put("vnp_CurrCode", "VND");
-        params.put("vnp_Locale", "vn");
-        params.put("vnp_OrderInfo", body.getContent());
-        params.put("vnp_ReturnUrl", vnPayReturnUrl);
-        params.put("vnp_TxnRef", ref);
-        params.put("vnp_OrderType", "other");
-        params.put("vnp_ExpireDate", expireDate);
-
-        List<String> keys = new ArrayList<>(params.keySet());
-        Collections.sort(keys);
-        StringBuilder hashData = new StringBuilder();
-        StringBuilder query = new StringBuilder();
-
-        Iterator<String> itr = keys.iterator();
-        while (itr.hasNext()) {
-            String fieldName = itr.next();
-            String fieldValue = params.get(fieldName);
-            if ((fieldValue != null) && (!fieldValue.isEmpty())) {
-                //Build hash data
-                hashData.append(fieldName);
-                hashData.append('=');
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
-                //Build query
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII));
-                query.append('=');
-                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
-                if (itr.hasNext()) {
-                    query.append('&');
-                    hashData.append('&');
-                }
-            }
-        }
-
-        String secretHash = cryptoService.hmacSHA512(hashSecret, hashData.toString());
-        String queryUrl = query.toString();
-        queryUrl += "&vnp_SecureHash=" + secretHash;
-        String payUrl = vnPayPayUrl + "?" + queryUrl;
-
-        log.info("Pay url {}", payUrl);
-        httpServletResponse.sendRedirect(payUrl);
-    }
-
-
-    @RequestMapping(path = "/return", method = RequestMethod.GET)
+    @RequestMapping(path = {"/return","/return/"}, method = RequestMethod.GET)
     public ModelAndView _return(HttpServletRequest httpServletRequest) {
         log.info("VnPay return url received");
         // Find order
         String ref = httpServletRequest.getParameter("vnp_TxnRef");
-        Order order = orderRepository.findByRef(ref);
-        if (order == null) {
-            return new ModelAndView(String.format("redirect:/?message=%s&success=false", URLEncoder.encode("Không tìm thấy đơn hàng", StandardCharsets.US_ASCII)));
+        Transaction transaction = transactionRepository.findByRef(ref);
+        if (transaction == null) {
+            return new ModelAndView(String.format("redirect:/?message=%s&success=false", URLEncoder.encode("Không tìm thấy thông tin giao dịch", StandardCharsets.US_ASCII)));
         }
+        Order order = transaction.getOrder();
         // Verify signature
         Map<String, String> fields = new HashMap<>();
         for (Enumeration<String> params = httpServletRequest.getParameterNames(); params.hasMoreElements(); ) {
@@ -158,10 +64,6 @@ public class VnpayController {
         log.info("Sign value {}", signValue);
         String vnp_SecureHash = httpServletRequest.getParameter("vnp_SecureHash");
 
-        // Transaction
-        Transaction transaction = new Transaction();
-        transaction.setPayMethod(PayMethod.VNPAY);
-        transaction.setOrder(order);
         // Defines
         TransactionStatus status = TransactionStatus.FAILED;
         String message = "Giao dịch thành công";
@@ -223,14 +125,8 @@ public class VnpayController {
         transaction.setMessage(message);
         transaction.setStatus(status);
         transactionRepository.save(transaction);
-        Set<Transaction> transactions = order.getTransactions();
-        if (transactions == null) {
-            transactions = new HashSet<>();
-        }
-        transactions.add(transaction);
-        order.setTransactions(transactions);
         orderRepository.save(order);
-        return new ModelAndView(String.format("redirect:/?message=%s&success=%b", URLEncoder.encode(message, StandardCharsets.UTF_8), success));
+        return new ModelAndView(String.format("redirect:/transactions/%s?message=%s&success=%b",transaction.getId().toString(), URLEncoder.encode(message, StandardCharsets.UTF_8), success));
     }
 
 

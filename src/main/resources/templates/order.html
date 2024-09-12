@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${order.getContent()}"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+          integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+</head>
+<body>
+<div class="container">
+    <h1 class="my-5">Thông tin đơn hàng</h1>
+    <table class="table table-striped border my-5">
+        <thead>
+        <tr>
+            <th>Tên</th>
+            <th>Giá trị</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>ID đơn hàng</td>
+            <td th:text="${order.getId()}"></td>
+        </tr>
+        <tr>
+            <td>Thành tiền</td>
+            <td th:text="${order.getAmount()}"></td>
+        </tr>
+        <tr>
+            <td>Tham chiếu đơn hàng</td>
+            <td th:text="${order.getRef()}"></td>
+        </tr>
+        <tr>
+            <td>Đã thanh toán</td>
+            <td th:class="'text-'+${order.isPayed() ? 'success':'secondary'}"><i class="fa-solid fa-circle"></i></td>
+        </tr>
+        <tr>
+            <td>Nội dung đơn hàng</td>
+            <td th:text="${order.getContent()}"></td>
+        </tr>
+        <tr>
+            <td>Thời điểm tạo</td>
+            <td th:text="${order.getCreatedAt()}"></td>
+        </tr>
+        </tbody>
+    </table>
+    <hr>
+    <form action="#" method="post" th:disabled="${order.isPayed()}" class="my-5 d-flex flex-column">
+        <button type="submit" th:formaction="@{'/pay/'+${order.getId().toString()}+'/vnpay'}"
+                th:disabled="${order.isPayed()}"
+                th:class="'btn btn-'+ ${order.isPayed() ? 'secondary' : 'primary'} + ' mt-2'">Pay with VNPay
+        </button>
+        <button type="submit" th:formaction="@{'/pay/'+${order.getId().toString()}+'/momo'}"
+                th:disabled="${order.isPayed()}"
+                th:class="'btn btn-outline-'+ ${order.isPayed() ? 'secondary' : 'primary'} + ' mt-2'">Pay with Momo
+        </button>
+    </form>
+    <hr>
+    <h1 class="my-5">Danh sách giao dịch</h1>
+    <table class="table table-striped border my-5">
+        <thead>
+        <tr>
+            <th>STT</th>
+            <th>Thành tiền</th>
+            <th>Trạng thái</th>
+            <th>Mã kết quả</th>
+            <th>Phương thức thanh toán</th>
+            <th>Mô tả</th>
+            <th>Tham chiếu giao dịch</th>
+            <th>Thời điểm tạo</th>
+            <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="transaction, iter: ${transactions}">
+            <td th:text="${iter.index}"></td>
+            <td th:text="${transaction.getAmount()}"></td>
+            <td th:text="${transaction.getStatus()}"></td>
+            <td th:text="${transaction.getResultCode()}"></td>
+            <td th:text="${transaction.getPayMethod()}"></td>
+            <td th:text="${transaction.getMessage()}"></td>
+            <td th:text="${transaction.getRef()}"></td>
+            <td th:text="${transaction.getCreatedAt()}"></td>
+            <td>
+                <a th:href="'/transactions/'+${transaction.getId().toString()}">View</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <button class="btn btn-outline-primary mt-3 mb-5 w-100" onclick="window.history.back()">Go Back</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

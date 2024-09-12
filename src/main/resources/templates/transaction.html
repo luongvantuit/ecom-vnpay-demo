@@ -12,53 +12,59 @@
 <body>
 
 <div class="container">
+    <h1 class="mt-5">Thông tin giao dịch</h1>
+    <hr>
+    <div role="alert" th:if="${message != null}"
+         th:class="'alert ' + ${#bools.isTrue(success) ? 'alert-success': 'alert-danger' }">
+        <p th:text="${message}"></p>
+    </div>
     <table class="table table-striped border my-5">
         <thead>
         <tr>
-            <th>Name</th>
-            <th>Value</th>
+            <th>Tên</th>
+            <th>Giá trị</th>
         </tr>
         </thead>
         <tbody>
         <tr>
-            <td>Ref</td>
-            <td th:text="${transaction.getOrder().getRef()}"></td>
+            <td>Tham chiếu giao dịch</td>
+            <td th:text="${transaction.ref}"></td>
         </tr>
         <tr>
-            <td>Amount</td>
+            <td>Thành tiền</td>
             <td th:text="${transaction.amount}"></td>
         </tr>
         <tr>
-            <td>Method</td>
-            <td th:text="${transaction.getPayMethod()}"></td>
+            <td>Trạng thái</td>
+            <td th:text="${transaction.status}"></td>
         </tr>
         <tr>
-            <td>Status</td>
-            <td th:text="${transaction.getStatus()}"></td>
+            <td>Mã kết quả</td>
+            <td th:text="${transaction.resultCode}"></td>
         </tr>
         <tr>
-            <td>Message</td>
+            <td>Phương thức thanh toán</td>
+            <td th:text="${transaction.payMethod}"></td>
+        </tr>
+        <tr>
+            <td>Mô tả</td>
             <td th:text="${transaction.getMessage()}"></td>
-        </tr>
-        <tr>
-            <td>Result Code</td>
-            <td th:text="${transaction.getResultCode()}"></td>
         </tr>
 
         <tr>
-            <td>Created At</td>
+            <td>Thời điểm tạo</td>
             <td th:text="${transaction.getCreatedAt()}"></td>
         </tr>
         <tr>
-            <td>Updated At</td>
+            <td>Thời điểm chỉnh sửa</td>
             <td th:text="${transaction.getUpdatedAt()}"></td>
         </tr>
         </tbody>
     </table>
     <hr>
-    <div class="d-flex flex-column justify-content-center align-items-center my-5">
-        <button class="btn btn-outline-primary w-50 mt-2" onclick="window.history.back()">Go Back</button>
-        <a class="btn btn-primary w-50 my-2" href="/">Home<i class="fa-solid fa-house ms-3"></i></a>
+    <div class="d-flex flex-column my-5">
+        <button class="btn btn-outline-primary mt-2" onclick="window.history.back()">Back</button>
+        <a class="btn btn-primary my-2" href="/">Home</a>
     </div>
 </div>
 

@@ -17,7 +17,7 @@ public class Transaction extends Base {
     @JoinColumn(name = "order_id", referencedColumnName = "id")
     private Order order;
 
-    @Column(name = "status", columnDefinition = "enum('SUCCESS','FAILED','CANCELLED','DISPUTE') default 'CANCELLED'")
+    @Column(name = "status", columnDefinition = "enum('PENDING','SUCCESS','FAILED','CANCELLED','DISPUTE') default 'CANCELLED'")
     @Enumerated(EnumType.STRING)
     private TransactionStatus status;
 
@@ -26,6 +26,12 @@ public class Transaction extends Base {
 
     @Column(name = "resultCode")
     private String resultCode;
+
+    @Column(name = "ref", nullable = false)
+    private String ref;
+
+    @Column(name = "ip_address", nullable = false)
+    private String ipAddress;
 
     public Transaction() {
     }
@@ -76,5 +82,21 @@ public class Transaction extends Base {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getRef() {
+        return ref;
+    }
+
+    public void setRef(String ref) {
+        this.ref = ref;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
     }
 }

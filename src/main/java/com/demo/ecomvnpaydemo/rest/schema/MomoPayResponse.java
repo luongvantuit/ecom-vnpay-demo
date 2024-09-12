@@ -24,4 +24,12 @@ public class MomoPayResponse {
     public void setPayUrl(String payUrl) {
         this.payUrl = payUrl;
     }
+
+    @Override
+    public String toString() {
+        return "MomoPayResponse{" +
+                "partnerCode='" + partnerCode + '\'' +
+                ", payUrl='" + payUrl + '\'' +
+                '}';
+    }
 }
