@@ -1,9 +1,11 @@
 package com.demo.ecomvnpaydemo.rest.controllers;
 
 import com.demo.ecomvnpaydemo.domain.models.Order;
+import com.demo.ecomvnpaydemo.domain.models.PayType;
 import com.demo.ecomvnpaydemo.domain.models.Transaction;
 import com.demo.ecomvnpaydemo.repositories.OrderRepository;
 import com.demo.ecomvnpaydemo.repositories.TransactionRepository;
+import com.demo.ecomvnpaydemo.rest.schema.CreateOrderBody;
 import com.demo.ecomvnpaydemo.rest.schema.PayBody;
 import com.demo.ecomvnpaydemo.utils.Generate;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,8 +42,10 @@ public class OrderController {
         }
         model.addAttribute("order", optionalOrder.get());
         List<Transaction> transactions = transactionRepository.findAllByOrderId(UUID.fromString(orderId), Sort.by(Sort.Direction.DESC, "createdAt"));
-        model.addAttribute("order", optionalOrder.get());
         model.addAttribute("transactions", transactions);
+        PayBody payBody = new PayBody();
+        payBody.setPayType(PayType.INTERNAL_BANK);
+        model.addAttribute("payBody", payBody);
         return new ModelAndView("order");
     }
 
@@ -56,7 +60,7 @@ public class OrderController {
     }
 
     @RequestMapping(path = {"", "/"}, method = RequestMethod.POST)
-    public ModelAndView create(@ModelAttribute PayBody body) {
+    public ModelAndView create(@ModelAttribute CreateOrderBody body) {
         // New order
         String content = body.getContent();
         float amount = body.getAmount();

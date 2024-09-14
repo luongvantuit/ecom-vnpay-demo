@@ -105,6 +105,7 @@ public class MomoController {
                         status = TransactionStatus.SUCCESS;
                     } else {
                         message = "Đơn hàng đã được thanh toán";
+                        order.setPayed(true);
                     }
                     break;
                 case 10:

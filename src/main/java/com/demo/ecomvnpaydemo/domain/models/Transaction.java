@@ -33,6 +33,13 @@ public class Transaction extends Base {
     @Column(name = "ip_address", nullable = false)
     private String ipAddress;
 
+    @Column(name = "pay_url", columnDefinition = "TEXT")
+    private String payUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pay_type")
+    private PayType payType;
+
     public Transaction() {
     }
 
@@ -98,5 +105,21 @@ public class Transaction extends Base {
 
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
+    }
+
+    public String getPayUrl() {
+        return payUrl;
+    }
+
+    public void setPayUrl(String payUrl) {
+        this.payUrl = payUrl;
+    }
+
+    public PayType getPayType() {
+        return payType;
+    }
+
+    public void setPayType(PayType payType) {
+        this.payType = payType;
     }
 }

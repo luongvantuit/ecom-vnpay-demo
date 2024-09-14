@@ -47,7 +47,18 @@
         </tbody>
     </table>
     <hr>
-    <form action="#" method="post" th:disabled="${order.isPayed()}" class="my-5 d-flex flex-column">
+    <form action="#" method="post" th:object="${payBody}" th:disabled="${order.isPayed()}"
+          class="my-5 d-flex flex-column">
+        <label for="type" class="h3">
+            Chọn hình thức thanh toán
+        </label>
+        <select id="type" th:field="*{payType}" class="form-select my-2">
+            <option th:value="${T(com.demo.ecomvnpaydemo.domain.models.PayType).QR_CODE}">QR</option>
+            <option th:value="${T(com.demo.ecomvnpaydemo.domain.models.PayType).INTERNAL_BANK}">Ngân hàng nội địa
+            </option>
+            <option th:value="${T(com.demo.ecomvnpaydemo.domain.models.PayType).INTERNATIONAL_CARD}">Thẻ quốc tế
+            </option>
+        </select>
         <button type="submit" th:formaction="@{'/pay/'+${order.getId().toString()}+'/vnpay'}"
                 th:disabled="${order.isPayed()}"
                 th:class="'btn btn-'+ ${order.isPayed() ? 'secondary' : 'primary'} + ' mt-2'">Pay with VNPay
@@ -83,8 +94,11 @@
             <td th:text="${transaction.getMessage()}"></td>
             <td th:text="${transaction.getRef()}"></td>
             <td th:text="${transaction.getCreatedAt()}"></td>
-            <td>
-                <a th:href="'/transactions/'+${transaction.getId().toString()}">View</a>
+            <td class="d-flex flex-column">
+                <a th:href="'/transactions/'+${transaction.getId().toString()}">Xem thông tin</a>
+                <a class="btn btn-primary" th:href="${transaction.getPayUrl()}"
+                   th:if="${!order.isPayed() && transaction.getStatus() == T(com.demo.ecomvnpaydemo.domain.models.TransactionStatus).PENDING && iter.index == 0}">Xử
+                    lý lại</a>
             </td>
         </tr>
         </tbody>

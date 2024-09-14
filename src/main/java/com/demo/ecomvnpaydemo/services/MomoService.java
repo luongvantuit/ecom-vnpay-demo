@@ -49,7 +49,12 @@ public class MomoService {
         long amount = (long) transaction.getAmount();
         // Extra data
         String extraData = "";
-        String requestType = "captureWallet";
+        String requestType = switch (transaction.getPayType()) {
+            case QR_CODE -> "captureWallet";
+            case INTERNATIONAL_CARD -> "payWithCC";
+            default -> "payWithATM";
+        };
+        log.info("Payment request type: {}", requestType);
 
         String rawSignatureData = String.format(
                 // @formatter:off

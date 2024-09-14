@@ -31,7 +31,7 @@ public class VnpayService {
         this.cryptoService = cryptoService;
     }
 
-    public String payUrl(Transaction order) {
+    public String payUrl(Transaction transaction) {
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -40,21 +40,28 @@ public class VnpayService {
         cld.add(Calendar.MINUTE, 15);
         String expireDate = formatter.format(cld.getTime());
 
+        String bankCode = switch (transaction.getPayType()) {
+            case QR_CODE -> "VNPAYQR";
+            case INTERNATIONAL_CARD -> "INTCARD";
+            default -> "VNBANK";
+        };
+
         Map<String, String> params = new HashMap<>();
 
         params.put("vnp_Version", "2.1.0");
         params.put("vnp_Command", "pay");
         params.put("vnp_TmnCode", vnPayTmnCode);
-        params.put("vnp_Amount", String.format("%d", (int) order.getAmount() * 100));
+        params.put("vnp_Amount", String.format("%d", (int) transaction.getAmount() * 100));
         params.put("vnp_CreateDate", createDate);
-        params.put("vnp_IpAddr", order.getIpAddress());
+        params.put("vnp_IpAddr", transaction.getIpAddress());
         params.put("vnp_CurrCode", "VND");
         params.put("vnp_Locale", "vn");
-        params.put("vnp_OrderInfo", order.getOrder().getContent());
+        params.put("vnp_OrderInfo", transaction.getOrder().getContent());
         params.put("vnp_ReturnUrl", vnPayReturnUrl);
-        params.put("vnp_TxnRef", order.getRef());
+        params.put("vnp_TxnRef", transaction.getRef());
         params.put("vnp_OrderType", "other");
         params.put("vnp_ExpireDate", expireDate);
+        params.put("vnp_BankCode", bankCode);
 
         List<String> keys = new ArrayList<>(params.keySet());
         Collections.sort(keys);

@@ -1,27 +1,18 @@
 package com.demo.ecomvnpaydemo.rest.schema;
 
+import com.demo.ecomvnpaydemo.domain.models.PayType;
+
 public class PayBody {
-
-    private float amount;
-
-    private String content;
+    private PayType payType;
 
     public PayBody() {
     }
 
-    public float getAmount() {
-        return amount;
+    public PayType getPayType() {
+        return payType;
     }
 
-    public void setAmount(float amount) {
-        this.amount = amount;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
+    public void setPayType(PayType payType) {
+        this.payType = payType;
     }
 }
